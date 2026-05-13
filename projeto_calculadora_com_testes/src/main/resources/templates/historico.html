@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico de Operações</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary:    #080810;
+            --bg-secondary:  #0f0f1c;
+            --bg-card:       rgba(255,255,255,0.04);
+            --bg-input:      rgba(255,255,255,0.06);
+            --bg-hover:      rgba(255,255,255,0.05);
+            --bg-row-hover:  rgba(240,180,42,0.04);
+            --border:        rgba(255,255,255,0.08);
+            --border-accent: rgba(240,180,42,0.35);
+            --gold:          #f0b42a;
+            --gold-dim:      rgba(240,180,42,0.15);
+            --gold-glow:     rgba(240,180,42,0.08);
+            --text-primary:  #eaeaf5;
+            --text-secondary:#8888aa;
+            --text-muted:    #55556a;
+        }
+
+        html, body {
+            min-height: 100vh;
+            background: var(--bg-primary);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-primary);
+        }
+
+        body {
+            background-image:
+                    radial-gradient(ellipse 70% 50% at 80% -10%, rgba(240,180,42,0.05) 0%, transparent 60%),
+                    radial-gradient(ellipse 60% 40% at 10% 110%, rgba(99,102,241,0.05) 0%, transparent 60%);
+            padding: 2.5rem 1rem;
+        }
+
+        .wrapper {
+            max-width: 700px;
+            margin: 0 auto;
+            animation: fadeUp 0.45s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── Top Bar ─────────────────────────────────── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--gold-dim);
+            border: 1px solid var(--border-accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: var(--gold);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .brand-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.02em;
+        }
+
+        .brand-name span { color: var(--gold); }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 400;
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            border-color: var(--border-accent);
+            color: var(--gold);
+            background: var(--gold-glow);
+        }
+
+        .back-link svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* ─── Page Title ──────────────────────────────── */
+        .page-heading {
+            margin-bottom: 1.5rem;
+        }
+
+        .page-heading h1 {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+        }
+
+        .page-heading p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ─── Stats Row ───────────────────────────────── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 22px;
+            font-weight: 400;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .stat-value.accent { color: var(--gold); }
+
+        /* ─── Table Card ──────────────────────────────── */
+        .table-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .table-header::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+        }
+
+        .table-title {
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .table-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 3px 10px;
+            background: var(--gold-dim);
+            border: 1px solid var(--border-accent);
+            border-radius: 20px;
+            color: var(--gold);
+        }
+
+        /* ─── Table ───────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead tr {
+            background: rgba(255,255,255,0.02);
+        }
+
+        thead th {
+            padding: 11px 22px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        thead th:last-child { text-align: right; }
+
+        tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.15s ease;
+        }
+
+        tbody tr:last-child { border-bottom: none; }
+
+        tbody tr:hover { background: var(--bg-row-hover); }
+
+        tbody td {
+            padding: 14px 22px;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .td-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            width: 60px;
+        }
+
+        .td-id .id-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .td-expression {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .td-expression .eq-sign {
+            color: var(--text-muted);
+            margin: 0 4px;
+        }
+
+        .td-expression .result-part {
+            color: var(--gold);
+        }
+
+        /* Parse expression to style parts */
+        .expr-text {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Empty state */
+        .empty-state {
+            padding: 60px 22px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .empty-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--text-muted);
+            fill: none;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .empty-state small {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ─── Footer ──────────────────────────────────── */
+        .footer {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 0.03em;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+        <div class="logo-group">
+            <div class="logo-icon">
+                <svg viewBox="0 0 16 16">
+                    <rect x="2" y="2" width="5" height="5" rx="1"/>
+                    <rect x="9" y="2" width="5" height="5" rx="1"/>
+                    <rect x="2" y="9" width="5" height="5" rx="1"/>
+                    <path d="M9 11.5h5M11.5 9v5"/>
+                </svg>
+            </div>
+            <span class="brand-name">Calc<span>Pro</span></span>
+        </div>
+        <a href="/" class="back-link">
+            <svg viewBox="0 0 24 24">
+                <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            Calculadora
+        </a>
+    </div>
+
+    <!-- Page Heading -->
+    <div class="page-heading">
+        <h1>Histórico de Operações</h1>
+        <p>Registro completo de todos os cálculos realizados.</p>
+    </div>
+
+    <!-- Stats Row (driven by Thymeleaf) -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-label">Total</div>
+            <div class="stat-value accent" th:text="${#lists.size(historico)}">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Última operação</div>
+            <div class="stat-value" style="font-size:14px; padding-top:4px;"
+                 th:text="${not #lists.isEmpty(historico)} ? ${historico[#lists.size(historico) - 1].expressao} : '—'">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Status</div>
+            <div class="stat-value" style="font-size:14px; padding-top:4px; color: var(--gold);">Ativo</div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="table-card">
+        <div class="table-header">
+            <span class="table-title">Registros</span>
+            <span class="table-badge" th:text="${#lists.size(historico)} + ' entradas'">0 entradas</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Expressão &amp; Resultado</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="op : ${historico}">
+                <td class="td-id">
+                    <span class="id-badge" th:text="${op.id}">1</span>
+                </td>
+                <td class="td-expression">
+                    <span th:text="${op.expressao}" class="expr-text"></span>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(historico)}">
+                <td colspan="2">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                                <path d="M9 12h6M9 16h4"/>
+                            </svg>
+                        </div>
+                        <p>Nenhuma operação realizada</p>
+                        <small>Os cálculos feitos na calculadora aparecerão aqui.</small>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">Spring Boot · Thymeleaf · 2025</div>
+
+</div>
+</body>
+</html>

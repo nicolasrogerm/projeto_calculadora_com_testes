@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary:    #080810;
+            --bg-secondary:  #0f0f1c;
+            --bg-card:       rgba(255,255,255,0.04);
+            --bg-input:      rgba(255,255,255,0.06);
+            --bg-hover:      rgba(255,255,255,0.09);
+            --border:        rgba(255,255,255,0.08);
+            --border-accent: rgba(240,180,42,0.35);
+            --gold:          #f0b42a;
+            --gold-dim:      rgba(240,180,42,0.15);
+            --gold-glow:     rgba(240,180,42,0.08);
+            --text-primary:  #eaeaf5;
+            --text-secondary:#8888aa;
+            --text-muted:    #55556a;
+            --success-bg:    rgba(52,211,153,0.1);
+            --success-border:rgba(52,211,153,0.3);
+            --success-text:  #6ee7b7;
+            --error-bg:      rgba(239,68,68,0.1);
+            --error-border:  rgba(239,68,68,0.3);
+            --error-text:    #fca5a5;
+        }
+
+        html, body {
+            min-height: 100vh;
+            background: var(--bg-primary);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-primary);
+        }
+
+        body {
+            background-image:
+                    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(240,180,42,0.06) 0%, transparent 60%),
+                    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(99,102,241,0.05) 0%, transparent 60%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 440px;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── Header ─────────────────────────────────── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding: 0 2px;
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--gold-dim);
+            border: 1px solid var(--border-accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: var(--gold);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .brand-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.02em;
+        }
+
+        .brand-name span {
+            color: var(--gold);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            border-color: var(--border-accent);
+            color: var(--gold);
+            background: var(--gold-glow);
+        }
+
+        .nav-link svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* ─── Card ────────────────────────────────────── */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        /* ─── Display ─────────────────────────────────── */
+        .display-area {
+            padding: 28px 28px 22px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .display-area::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+        }
+
+        .display-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        /* Alert states */
+        .alert {
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 400;
+            line-height: 1.5;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-8px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        .alert-success {
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--text-secondary);
+        }
+
+        .alert-success .result-label {
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-family: 'Outfit', sans-serif;
+            margin-bottom: 4px;
+        }
+
+        .alert-success .result-value {
+            font-size: 32px;
+            font-weight: 300;
+            color: var(--success-text);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .alert-danger {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            color: var(--error-text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-danger svg {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            stroke: var(--error-text);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .placeholder-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 300;
+            color: var(--text-muted);
+            letter-spacing: -0.02em;
+        }
+
+        /* ─── Form ────────────────────────────────────── */
+        .form-body {
+            padding: 24px 28px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            font-weight: 400;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        input[type="number"]::placeholder {
+            color: var(--text-muted);
+        }
+
+        input[type="number"]:hover,
+        select:hover {
+            border-color: rgba(255,255,255,0.16);
+            background: var(--bg-hover);
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            border-color: var(--border-accent);
+            background: var(--bg-hover);
+            box-shadow: 0 0 0 3px var(--gold-glow);
+        }
+
+        /* Custom select arrow */
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            pointer-events: none;
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0; height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid var(--text-muted);
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: var(--text-primary);
+        }
+
+        .field-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
+
+        /* ─── Divider ─────────────────────────────────── */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0 -28px;
+            position: relative;
+        }
+
+        /* ─── Submit Button ───────────────────────────── */
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: var(--gold);
+            border: none;
+            border-radius: 12px;
+            color: #1a0d00;
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .btn-submit:hover {
+            background: #f5c040;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(240,180,42,0.25);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* ─── Footer ──────────────────────────────────── */
+        .footer {
+            margin-top: 1.25rem;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 0.03em;
+        }
+
+        /* Remove number input arrows */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo-group">
+            <div class="logo-icon">
+                <svg viewBox="0 0 16 16">
+                    <rect x="2" y="2" width="5" height="5" rx="1"/>
+                    <rect x="9" y="2" width="5" height="5" rx="1"/>
+                    <rect x="2" y="9" width="5" height="5" rx="1"/>
+                    <path d="M9 11.5h5M11.5 9v5"/>
+                </svg>
+            </div>
+            <span class="brand-name">Calc<span>Pro</span></span>
+        </div>
+        <a href="/historico" class="nav-link">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 8v4l3 3"/>
+                <circle cx="12" cy="12" r="9"/>
+            </svg>
+            Histórico
+        </a>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card">
+
+        <!-- Display -->
+        <div class="display-area">
+            <div class="display-label">Resultado</div>
+
+            <div th:if="${erro}" class="alert alert-danger" role="alert">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+                <span th:text="${erro}"></span>
+            </div>
+
+            <div th:if="${resultadoAtual != null}" class="alert alert-success" role="alert">
+                <div class="result-label">= resultado</div>
+                <div class="result-value" th:text="${resultadoAtual}"></div>
+            </div>
+
+            <div th:if="${resultadoAtual == null and erro == null}" class="placeholder-display">
+                0.00
+            </div>
+        </div>
+
+        <!-- Form -->
+        <form action="/calcular" method="post" class="form-body">
+
+            <div class="field-row">
+                <div class="field-group">
+                    <label for="valorA">Valor A</label>
+                    <input type="number" step="any" id="valorA" name="valorA"
+                           placeholder="0" required>
+                </div>
+                <div class="field-group">
+                    <label for="valorB">Valor B</label>
+                    <input type="number" step="any" id="valorB" name="valorB"
+                           placeholder="0">
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label for="operacao">Operação</label>
+                <div class="select-wrapper">
+                    <select id="operacao" name="operacao" required>
+                        <option value="SOMAR">Somar (+)</option>
+                        <option value="SUBTRAIR">Subtrair (−)</option>
+                        <option value="MULTIPLICAR">Multiplicar (×)</option>
+                        <option value="DIVIDIR">Dividir (÷)</option>
+                        <option value="PORCENTAGEM">Porcentagem (%)</option>
+                        <option value="POTENCIA">Potência (^)</option>
+                        <option value="RAIZ">Raiz Quadrada (√)</option>
+                    </select>
+                </div>
+                <span class="field-hint">Para Raiz Quadrada, o Valor B é ignorado.</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <button type="submit" class="btn-submit">Calcular</button>
+
+        </form>
+    </div>
+
+    <div class="footer">Spring Boot · Thymeleaf · 2025</div>
+
+</div>
+</body>
+</html>
